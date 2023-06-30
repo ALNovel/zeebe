@@ -42,6 +42,7 @@ import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
+import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
@@ -145,7 +146,10 @@ public final class DeploymentCreateProcessor
     responseWriter.writeEventOnCommand(key, DeploymentIntent.CREATED, deploymentEvent, command);
     stateWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent);
 
-    distributionBehavior.distributeCommand(key, command);
+    if (!deploymentEvent.getProcessesMetadata().stream()
+        .allMatch(ProcessMetadataValue::isDuplicate)) {
+      distributionBehavior.distributeCommand(key, command);
+    }
   }
 
   private void processDistributedRecord(final TypedRecord<DeploymentRecord> command) {
